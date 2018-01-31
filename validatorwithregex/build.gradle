@@ -11,7 +11,7 @@ repositories {
 
 task(runSimple, dependsOn: 'classes', type: JavaExec) {
     main = 'com.juliapavlenko.validatorwithregex.AppValidatorWithRegex'
-    Classpath = sourceSets.main.runtimeClasspath
+    classpath = sourceSets.main.runtimeClasspath
 }
 
 defaultTasks 'runSimple'
