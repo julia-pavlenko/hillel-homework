@@ -29,8 +29,6 @@ public class JiraTests extends WebDriverTestBase {
         loginPage = PageFactory.initElements(browser, LoginPage.class);
         issuePage = PageFactory.initElements(browser, IssuePage.class);
         System.out.println("Jira Pages Initialized");
-        TestNG.createRun();
-        System.out.println("Run is created");
     }
 
 
@@ -71,10 +69,6 @@ public class JiraTests extends WebDriverTestBase {
         // loginPage.downloadAttachment();
     }
 
-    @AfterMethod
-    void printResult(ITestResult iTestResult) throws IOException, APIException {
-        int testId = iTestResult.getMethod().getConstructorOrMethod().getMethod().getAnnotation(TestData.class).testId();
-        TestNG.setStatus(testId, iTestResult.isSuccess());
-    }
+
 
 }

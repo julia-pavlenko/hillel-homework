@@ -1,10 +1,13 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
 <suite name="Sanity Suite" verbose="0" group-by-instances="true">
     <test name="Sanity" verbose="1" group-by-instances="true">
+        <parameter name="testRailProjectId" value="5"/>
+        <parameter name="testRailRunName" value="Jira Auto Run"/>
         <groups>
             <run>
                 <exclude name="disabled"/>
                 <include name="Sanity"/>
+                <include name="TestRailReport"/>
             </run>
         </groups>
         <packages>
