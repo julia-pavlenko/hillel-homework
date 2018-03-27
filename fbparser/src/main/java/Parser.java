@@ -14,17 +14,16 @@ import java.util.regex.Pattern;
  */
 public class Parser {
 
-    private final String REPORT_PATH = "/Users/julia/src/test/fb/output.csv";
+    private final String OUTPUT_FILE_PATH = "/Users/julia/src/test/fb/output.csv";
+    private final String INPUT_FOLDER_PATH = "/Users/julia/src/test/fb";
 
-    private final String fileFolderPath;
     private ArrayList<String> givenFBMembers;
     private ArrayList<FBMember> fBMembers;
 
     public static void main(String[] args) throws IOException {
         long startTime = System.currentTimeMillis();
 
-        String fileFolderPath = args[0];
-        Parser parser = new Parser(fileFolderPath);
+        Parser parser = new Parser();
         parser.parseFilesFolder();
         parser.parseStringsToFBMember();
         parser.createReport();
@@ -35,12 +34,8 @@ public class Parser {
 
     }
 
-    public Parser(String fileFolderPath) {
-        this.fileFolderPath = fileFolderPath;
-    }
-
     private void parseFilesFolder() {
-        File fileFolder = new File(fileFolderPath);
+        File fileFolder = new File(INPUT_FOLDER_PATH);
         if (fileFolder.exists() && fileFolder.isDirectory()) {
             for (final File file : fileFolder.listFiles()) {
                 if (file.isFile() && file.getName().startsWith("test")) {
@@ -128,7 +123,7 @@ public class Parser {
     }
 
     private void createReport() throws IOException {
-        FileWriter writer = new FileWriter(REPORT_PATH);
+        FileWriter writer = new FileWriter(OUTPUT_FILE_PATH);
         writer.write("First Name,Last Name,ID\n");
         for ( FBMember fbmember: fBMembers) {
             writer.write(fbmember.name+","+fbmember.surname+","+fbmember.id+"\n");
