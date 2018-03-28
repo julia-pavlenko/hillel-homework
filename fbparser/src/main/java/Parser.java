@@ -1,11 +1,12 @@
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -15,32 +16,45 @@ import java.util.regex.Pattern;
 public class Parser {
 
     private final String OUTPUT_FILE_PATH = "/Users/julia/src/test/fb/output.csv";
-    private final String INPUT_FOLDER_PATH = "/Users/julia/src/test/fb";
+    private static final String INPUT_FOLDER_PATH = "/Users/julia/src/test/fb";
 
+    private String fileFolderPath;
     private ArrayList<String> givenFBMembers;
     private ArrayList<FBMember> fBMembers;
+    private Map<String, FBMember> fbMemberMap;
+    private OkHttpClient client;
+    private int arraySize;
 
     public static void main(String[] args) throws IOException {
         long startTime = System.currentTimeMillis();
 
-        Parser parser = new Parser();
+        String fileFolderPath = INPUT_FOLDER_PATH;
+        Parser parser = new Parser(fileFolderPath);
         parser.parseFilesFolder();
         parser.parseStringsToFBMember();
         parser.createReport();
 
         long endTime = System.currentTimeMillis();
         long speed = endTime - startTime;
-        System.out.println("Finish with speed: "+speed/1000);
+        System.out.println("Finish with speed: "+speed / 1000);
 
     }
 
+    public Parser(String fileFolderPath) {
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+        builder.connectTimeout(3, TimeUnit.SECONDS);
+        client = builder.build();
+        this.fileFolderPath = fileFolderPath;
+    }
+
     private void parseFilesFolder() {
-        File fileFolder = new File(INPUT_FOLDER_PATH);
+        File fileFolder = new File(fileFolderPath);
         if (fileFolder.exists() && fileFolder.isDirectory()) {
             for (final File file : fileFolder.listFiles()) {
                 if (file.isFile() && file.getName().startsWith("test")) {
                     if (fBMembers == null) {
-                        fBMembers = new ArrayList<FBMember>(1001);
+                        fBMembers = new ArrayList<FBMember>(arraySize);
+                        fbMemberMap = new HashMap<String, FBMember>(arraySize);
                     }
                     parseFile(file);
                 }
@@ -55,7 +69,7 @@ public class Parser {
             long startOfreading = System.currentTimeMillis();
             BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF-8"));
             String line;
-            givenFBMembers = new ArrayList<String>(1001);
+            givenFBMembers = new ArrayList<String>(50000);
             while ((line = br.readLine()) != null) {
                 String trimmedLine = line.trim();
                 givenFBMembers.add(trimmedLine);
@@ -64,21 +78,37 @@ public class Parser {
             long speed = (endOfreading-startOfreading)/1000;
             System.out.println("File was read with speed:"+speed+" sec");
             br.close();
+            arraySize = givenFBMembers.size();
         }
         catch (IOException e){
             e.printStackTrace();
         }
     }
 
+    private String httpGet(String url) {
+        try {
+            Request request = new Request.Builder()
+                    .url(url)
+                    .build();
+
+            Response response = client.newCall(request).execute();
+            return response.body().string();
+        } catch (IOException e) {
+        }
+        return "Timeout";
+    }
+
     private void parseStringsToFBMember() throws IOException {
         long startOfreading = System.currentTimeMillis();
-        for ( String givenMember: givenFBMembers) {
-            parseStringToFBMember(givenMember);
+        for (int i = 0; i < arraySize; i++) {
+            if (i%(arraySize / 100) == 0){
+                System.out.printf("\ncurrentProgress: %d%s", Math.round((i / (arraySize - 1f)) * 100), "%");
+            }
+            parseStringToFBMember(givenFBMembers.get(i));
         }
         long endOfreading = System.currentTimeMillis();
         long speed = (endOfreading-startOfreading)/1000;
-        System.out.println("Data was created with speed:"+speed+" sec");
-
+        System.out.println("\nData was created with speed:" + speed+" sec");
     }
 
     private void parseStringToFBMember(String member) throws IOException {
@@ -88,8 +118,13 @@ public class Parser {
         String url = member.split(",")[1];
         String id = getIdFromURL(url);
 
-        FBMember fbMember = new FBMember(name,surName,id);
-        fBMembers.add(fbMember);
+        if (fbMemberMap.containsKey(url)) {
+            fBMembers.add(fbMemberMap.get(url));
+        } else {
+            FBMember fbMember = new FBMember(name,surName,id);
+            fBMembers.add(fbMember);
+            fbMemberMap.put(url, fbMember);
+        }
     }
 
     private String getIdFromURL(String url) throws IOException {
@@ -107,18 +142,17 @@ public class Parser {
     }
 
     private String getId(String givenURL) throws IOException {
-
         String username = givenURL.replace("https://www.facebook.com/","");
         String URL = "https://zerohacks.com/ads/findmyid/index.php?username="+username+".html";
-        CloseableHttpClient httpClient = HttpClientBuilder.create().build();
-        HttpGet request = new HttpGet(URL);
-        HttpResponse response = httpClient.execute(request);
-        String content = EntityUtils.toString(response.getEntity());
-        httpClient.close();
+        String content = httpGet(URL);
         String id;
         if (content.contains("Your Facebook Numerical ID is ")) {
             id = content.replace("Your Facebook Numerical ID is ","");
-        } else id="Id not found";
+        } else if (content.contains("Timeout")) {
+            id = "Timeout";
+        } else {
+            id = "Id not found";
+        }
         return id;
     }
 
