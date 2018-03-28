@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
  */
 public class Parser {
 
-    private final String OUTPUT_FILE_PATH = "/Users/julia/src/test/fb/output.csv";
+    private static final String OUTPUT_FILE_PATH = "/Users/julia/src/test/fb/output.csv";
     private static final String INPUT_FOLDER_PATH = "/Users/julia/src/test/fb";
 
     private String fileFolderPath;
@@ -28,8 +28,7 @@ public class Parser {
     public static void main(String[] args) throws IOException {
         long startTime = System.currentTimeMillis();
 
-        String fileFolderPath = INPUT_FOLDER_PATH;
-        Parser parser = new Parser(fileFolderPath);
+        Parser parser = new Parser(INPUT_FOLDER_PATH);
         parser.parseFilesFolder();
         parser.parseStringsToFBMember();
         parser.createReport();
